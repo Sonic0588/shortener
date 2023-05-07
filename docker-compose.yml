@@ -1,0 +1,20 @@
+version: '3.7'
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: shortener_dev
+    volumes:
+          - ./app:/usr/src/app/
+    command: >
+      sh -c "
+        /usr/src/docker-entrypoint.sh
+      "
+    ports:
+      - "8080:8080"
+      - "5678:5678"
+    environment:
+      PYTHONPATH: /usr/src/:/usr/src/app
+    restart: unless-stopped
