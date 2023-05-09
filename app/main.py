@@ -1,9 +1,11 @@
 from fastapi import Depends, FastAPI, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.responses import JSONResponse, RedirectResponse, Response
+from sqlalchemy.orm import Session
 
+from .database import get_db_session
 from .models import Link
-from .repositories import AbstractLinksRepository, LinksInMemoryRepository
+from .repositories import LinksDBRepository
 from .services import create_short_link
 
 app = FastAPI()
@@ -31,8 +33,9 @@ async def liveness_ping() -> JSONResponse:
 @app.get("/{link_id}")
 async def get_link(
     link_id: str,
-    links_repo: AbstractLinksRepository = Depends(LinksInMemoryRepository),
+    db_session: Session = Depends(get_db_session),
 ) -> RedirectResponse:
+    links_repo = LinksDBRepository(db_session)
     long_link = links_repo.get(link_id)
     return RedirectResponse(long_link)
 
@@ -40,16 +43,18 @@ async def get_link(
 @app.delete("/{link_id}")
 async def delete_link(
     link_id: str,
-    links_repo: AbstractLinksRepository = Depends(LinksInMemoryRepository),
-) -> JSONResponse:
+    db_session: Session = Depends(get_db_session),
+) -> Response:
+    links_repo = LinksDBRepository(db_session)
     links_repo.delete(link_id)
-    return JSONResponse(content="", status_code=status.HTTP_204_NO_CONTENT)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @app.post("/links")
 async def add_link(
     link: Link,
-    links_repo: AbstractLinksRepository = Depends(LinksInMemoryRepository),
+    db_session: Session = Depends(get_db_session),
 ) -> JSONResponse:
+    links_repo = LinksDBRepository(db_session)
     short_link = create_short_link(link.url, links_repo)
     return JSONResponse(content=dict(short_link=short_link))
