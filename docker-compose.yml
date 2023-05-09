@@ -5,7 +5,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: shortener_dev
+    container_name: shortener-dev
     volumes:
           - ./app:/usr/src/app/
     command: >
@@ -18,3 +18,20 @@ services:
     environment:
       PYTHONPATH: /usr/src/:/usr/src/app
     restart: unless-stopped
+    depends_on:
+      - database
+
+  database:
+    container_name: shortener-db-dev
+    environment:
+      POSTGRES_DB: shortener
+      POSTGRES_USER: shortener
+      POSTGRES_PASSWORD: password
+      LANG: en_US.utf8
+      LC_ALL: en_US.utf8
+    image: postgres:alpine
+    ports:
+      - 5432:5432
+    restart: unless-stopped
+    volumes:
+      - ./db/migrations/01-init-schema.sql:/docker-entrypoint-initdb.d/1.sql
